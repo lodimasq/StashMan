@@ -7,12 +7,12 @@ using ExileCore2.PoEMemory.Components;
 using ExileCore2.PoEMemory.MemoryObjects;
 using ExileCore2.Shared.Enums;
 using ImGuiNET;
-using Stashie.Classes;
-using static Stashie.StashieCore;
+using StashMan.Classes;
+using static StashMan.StashManCore;
 using Vector2N = System.Numerics.Vector2;
 using Vector4N = System.Numerics.Vector4;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 public class StashieSettingsHandler
 {
@@ -55,11 +55,19 @@ public class StashieSettingsHandler
 
         Main.FilterTabs = null;
 
+        Main.LogMsg("1");
+        if (Main.currentFilter == null)
+        {
+            Main.LogMsg("curr filter null");
+            return;
+        }
+
         foreach (var parent in Main.currentFilter)
             Main.FilterTabs += () =>
             {
                 ImGui.TextColored(new Vector4N(0f, 1f, 0.022f, 1f), parent.ParentMenuName);
 
+                Main.LogMsg("2");
                 foreach (var filter in parent.Filters)
                     if (Main.Settings.CustomFilterOptions.TryGetValue(parent.ParentMenuName + filter.FilterName,
                             out var indexNode))
@@ -145,7 +153,7 @@ public class StashieSettingsHandler
 
         FilterManager.LoadCustomFilters();
         GenerateTabMenu();
-        DebugWindow.LogMsg("Reloaded Stashie config", 2, Color.LimeGreen);
+        DebugWindow.LogMsg("Reloaded StashMan config", 2, Color.LimeGreen);
     }
 
     public static void DrawIgnoredCellsSettings()

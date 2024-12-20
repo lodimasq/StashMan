@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using ItemFilterLibrary;
-using Stashie.Classes;
+using StashMan.Classes;
 
-namespace Stashie.Filter;
+namespace StashMan.Filter;
 
 public class CustomFilter : BaseFilter
 {

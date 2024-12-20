@@ -4,19 +4,19 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 public static class FileManager
 {
     private static string GetFullPath(string fileName, string extension = "")
     {
-        return Path.Combine(StashieCore.Main.ConfigDirectory, $"{fileName}{extension}");
+        return Path.Combine(StashManCore.Main.ConfigDirectory, $"{fileName}{extension}");
     }
 
     private static void HandleException(Exception e, string fullPath, bool isSaving, int logLevel = 15)
     {
         var operation = isSaving ? "saving" : "loading";
-        StashieCore.Main.LogError($"Error {operation} file at {fullPath}:\n{e.Message}", logLevel);
+        StashManCore.Main.LogError($"Error {operation} file at {fullPath}:\n{e.Message}", logLevel);
     }
 
     public static void SaveToFile<T>(T objectToSave, string fileName, string extension = ".json")
@@ -26,7 +26,7 @@ public static class FileManager
         {
             var jsonString = JsonConvert.SerializeObject(objectToSave, Formatting.Indented);
             File.WriteAllText(fullPath, jsonString);
-            StashieCore.Main.LogMessage($"Successfully saved file to {fullPath}.", 8);
+            StashManCore.Main.LogMessage($"Successfully saved file to {fullPath}.", 8);
         }
         catch (Exception e)
         {
@@ -74,7 +74,7 @@ public static class FileManager
         }
         catch (Exception e)
         {
-            StashieCore.Main.LogError($"Failed to retrieve files with extension {extension}: {e.Message}", 15);
+            StashManCore.Main.LogError($"Failed to retrieve files with extension {extension}: {e.Message}", 15);
         }
 
         return filesList;

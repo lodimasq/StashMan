@@ -6,11 +6,11 @@ using System.Threading;
 using ExileCore2;
 using ExileCore2.Shared;
 using ItemFilterLibrary;
-using Stashie.Classes;
-using static Stashie.StashieCore;
+using StashMan.Classes;
+using static StashMan.StashManCore;
 using Vector2N = System.Numerics.Vector2;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 internal class FilterManager
 {

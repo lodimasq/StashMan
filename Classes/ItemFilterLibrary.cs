@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Stashie.Classes;
+namespace StashMan.Classes;
 
 public class IFL
 {

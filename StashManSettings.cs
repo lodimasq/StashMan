@@ -4,11 +4,11 @@ using System.Windows.Forms;
 using ExileCore2.Shared.Attributes;
 using ExileCore2.Shared.Interfaces;
 using ExileCore2.Shared.Nodes;
-using Stashie.Classes;
+using StashMan.Classes;
 
-namespace Stashie;
+namespace StashMan;
 
-public class StashieSettings : ISettings
+public class StashManSettings : ISettings
 {
     public List<string> AllStashNames = [];
     public Dictionary<string, ListIndexNode> CustomFilterOptions = [];
@@ -34,7 +34,7 @@ public class StashieSettings : ISettings
     public RangeNode<int> StashItemDelay { get; set; } = new(25, 0, 2000);
 
     [Menu("When done, go to tab.",
-        "After Stashie has dropped all items to their respective tabs, then go to the set tab.")]
+        "After StashMan has dropped all items to their respective tabs, then go to the set tab.")]
     public ToggleNode VisitTabWhenDone { get; set; } = new(false);
 
     [Menu("tab (index)")] public RangeNode<int> TabToVisitWhenDone { get; set; } = new(0, 0, 40);

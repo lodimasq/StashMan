@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using ExileCore2;
 using ExileCore2.Shared;
-using Stashie.Classes;
-using static Stashie.StashieCore;
+using StashMan.Classes;
+using static StashMan.StashManCore;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 internal class StashTabNameCoRoutine
 {
@@ -38,7 +38,7 @@ internal class StashTabNameCoRoutine
             {
                 realStashName += " (" + i + ")";
 #if DebugMode
-                    LogMessage("Stashie: fixed same stash name to: " + realStashName, 3);
+                    LogMessage("StashMan: fixed same stash name to: " + realStashName, 3);
 #endif
             }
 
@@ -115,14 +115,22 @@ internal class StashTabNameCoRoutine
     {
         while (true)
         {
-            while (!Main.GameController.Game.IngameState.InGame)
-                await Task.Delay(2000);
+            Main.LogMsg("start loop");
+            // while (!Main.GameController.Game.IsInGameState)
+            // {
+            //     Main.LogMsg("not in game");
+            //     await Task.Delay(2000);
+            // }
 
             var stashPanel = Main.GameController.Game.IngameState?.IngameUi?.StashElement;
 
             while (stashPanel == null || !stashPanel.IsVisibleLocal)
+            {
+                Main.LogMsg("stash panel not visible");
                 await Task.Delay(1000);
+            }
 
+            Main.LogMsg("state valid");
             _counterStashTabNamesCoroutine++;
             var cachedNames = Main.Settings.AllStashNames;
             var realNames = stashPanel.AllStashNames;
@@ -144,6 +152,7 @@ internal class StashTabNameCoRoutine
             }
 
             await Task.Delay(1000);
+            Main.LogMsg("end loop");
         }
     }
 }

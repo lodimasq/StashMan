@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ExileCore2;
 using ImGuiNET;
-using Stashie.Classes;
-using Stashie.Compartments;
-using Stashie.Filter;
+using StashMan.Classes;
+using StashMan.Compartments;
+using StashMan.Filter;
 using Vector2N = System.Numerics.Vector2;
 
-namespace Stashie;
+namespace StashMan;
 
-public class StashieCore : BaseSettingsPlugin<StashieSettings>
+public class StashManCore : BaseSettingsPlugin<StashManSettings>
 {
     public const string CoroutineName = "Drop To Stash";
     public const string StashTabsNameChecker = "Stash Tabs Name Checker";
-    public static StashieCore Main;
+    public static StashManCore Main;
 
     public static List<string> RenamedAllStashNames;
     public readonly Stopwatch DebugTimer = new();
@@ -28,9 +28,9 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
     public string[] StashTabNamesByIndex;
     public int VisibleStashIndex = -1;
 
-    public StashieCore()
+    public StashManCore()
     {
-        Name = "Stashie With Linq";
+        Name = "StashMan";
     }
 
     public override bool Initialise()
@@ -45,6 +45,7 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
 
             Utility.SetupOrClose();
         };
+
 
         StashieEditorHandler.FileSaveName = Settings.ConfigLastSaved;
         StashieEditorHandler.SelectedFileName = Settings.ConfigLastSaved;
@@ -62,38 +63,20 @@ public class StashieCore : BaseSettingsPlugin<StashieSettings>
 
     public override void Render()
     {
-        try
-        {
-            if (Settings.InspectInventoryItems)
-                GameController.InspectObject(FilterManager.GetInventoryItems(), "Stashie item data");
-        }
-        catch
-        {
-            // Dont actually care what happens, if you leave it on I guess dont.
-        }
+        if (!Settings.Enable.Value) return;
+
+        // Draw a debug window
+
+        ImGui.SetNextWindowSize(new Vector2N(300, 200), ImGuiCond.FirstUseEver);
+        ImGui.Begin("StashMan Debug");
+        ImGui.Text(Settings.AllStashNames.Count > 0
+            ? $"Stash Names: {string.Join(", ", Settings.AllStashNames)}"
+            : "No Stash Names");
     }
 
     public override void DrawSettings()
     {
-        ImGui.BeginTabBar("TabBar");
-        if (ImGui.TabItemButton("Main Settings")) IsFilterEditorTab = false;
-
-        if (ImGui.TabItemButton("Filter Editor")) IsFilterEditorTab = true;
-
-        ImGui.EndTabBar();
-
-        if (IsFilterEditorTab)
-        {
-            StashieEditorHandler.ConverterMenu();
-            StashieEditorHandler.SaveLoadMenu();
-            StashieEditorHandler.DrawEditorMenu();
-        }
-        else
-        {
-            StashieSettingsHandler.FilePicker();
-            base.DrawSettings();
-            FilterTabs?.Invoke();
-        }
+        base.DrawSettings();
 
         Settings.ConfigLastSaved = StashieEditorHandler.FileSaveName;
         Settings.ConfigLastSelected = StashieEditorHandler.SelectedFileName;

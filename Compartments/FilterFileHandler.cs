@@ -4,10 +4,10 @@ using System.IO;
 using ExileCore2;
 using ItemFilterLibrary;
 using Newtonsoft.Json;
-using Stashie.Classes;
-using Stashie.Filter;
+using StashMan.Classes;
+using StashMan.Filter;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 public class FilterFileHandler
 {
@@ -35,7 +35,7 @@ public class FilterFileHandler
 
                     if (filterErrorParse)
                         DebugWindow.LogError(
-                            $"[Stashie] JSON Error loading. Parent: {parentMenu.MenuName}, Filter: {filter.FilterName}",
+                            $"[StashMan] JSON Error loading. Parent: {parentMenu.MenuName}, Filter: {filter.FilterName}",
                             15);
                     else
                         newParent.Filters.Add(new CustomFilter.Filter
@@ -54,7 +54,7 @@ public class FilterFileHandler
         }
         catch (Exception ex)
         {
-            DebugWindow.LogError($"[Stashie] Failed Loading filter {fileName}\nException: {ex.Message}", 15);
+            DebugWindow.LogError($"[StashMan] Failed Loading filter {fileName}\nException: {ex.Message}", 15);
         }
 
         return allFilters;

@@ -6,10 +6,10 @@ using System.Windows.Forms;
 using ExileCore2;
 using ExileCore2.Shared;
 using ExileCore2.Shared.Enums;
-using Stashie.Classes;
-using static Stashie.StashieCore;
+using StashMan.Classes;
+using static StashMan.StashManCore;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 internal class ActionsHandler
 {

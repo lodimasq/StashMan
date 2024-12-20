@@ -1,6 +1,6 @@
 ﻿using ItemFilterLibrary;
 
-namespace Stashie.Filter;
+namespace StashMan.Filter;
 
 public class BaseFilter : IIFilter
 {

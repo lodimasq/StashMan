@@ -4,16 +4,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ImGuiNET;
-using Stashie.Classes;
-using static Stashie.StashieCore;
+using StashMan.Classes;
+using static StashMan.StashManCore;
 using Vector2N = System.Numerics.Vector2;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 public class StashieEditorHandler
 {
     public const string OverwritePopup = "Overwrite?";
-    public const string FilterEditPopup = "Stashie Filter (Multi-Line)";
+    public const string FilterEditPopup = "StashMan Filter (Multi-Line)";
     public static string _editorGroupFilter = "";
     public static string _editorQueryFilter = "";
     public static string _editorQueryContentFilter = "";
@@ -238,7 +238,7 @@ public class StashieEditorHandler
     {
         if (Editor.GroupIndex != parentIndex || Editor.FilterIndex != filterIndex) return;
 
-        if (!ImGui.Begin("Edit Stashie Filter", ImGuiWindowFlags.None))
+        if (!ImGui.Begin("Edit StashMan Filter", ImGuiWindowFlags.None))
         {
             ImGui.End();
             return;
@@ -358,7 +358,7 @@ public class StashieEditorHandler
 
         if (ImGui.Button("Open Filter Folder"))
         {
-            var configDir = Path.Combine(Path.GetDirectoryName(Main.ConfigDirectory), "Stashie");
+            var configDir = Path.Combine(Path.GetDirectoryName(Main.ConfigDirectory), "StashMan");
 
             if (!Directory.Exists(configDir))
                 Main.LogError($"Path Doesn't Exist\n{configDir}");

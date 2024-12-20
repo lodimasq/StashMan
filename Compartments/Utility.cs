@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Stashie.Classes;
+using StashMan.Classes;
 using static ExileCore2.PoEMemory.MemoryObjects.ServerInventory;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 internal class Utility
 {
     public static void SaveDefaultConfigsToDisk()
     {
-        WriteToNonExistentFile($"{StashieCore.Main.ConfigDirectory}\\example filter.txt",
-            "https://github.com/DetectiveSquirrel/Stashie/blob/master/Example%20Filter/Example.json");
+        WriteToNonExistentFile($"{StashManCore.Main.ConfigDirectory}\\example filter.txt",
+            "https://github.com/DetectiveSquirrel/StashMan/blob/master/Example%20Filter/Example.json");
     }
 
     public static void WriteToNonExistentFile(string path, string content)
@@ -30,19 +30,19 @@ internal class Utility
     public static void SetupOrClose()
     {
         SaveDefaultConfigsToDisk();
-        StashieCore.Main.SettingsListNodes = new List<ListIndexNode>(100);
+        StashManCore.Main.SettingsListNodes = new List<ListIndexNode>(100);
         FilterManager.LoadCustomFilters();
 
         try
         {
-            StashieCore.Main.Settings.TabToVisitWhenDone.Max =
-                (int)StashieCore.Main.GameController.Game.IngameState.IngameUi.StashElement.TotalStashes - 1;
-            var names = StashieCore.Main.GameController.Game.IngameState.IngameUi.StashElement.AllStashNames;
+            StashManCore.Main.Settings.TabToVisitWhenDone.Max =
+                (int)StashManCore.Main.GameController.Game.IngameState.IngameUi.StashElement.TotalStashes - 1;
+            var names = StashManCore.Main.GameController.Game.IngameState.IngameUi.StashElement.AllStashNames;
             StashTabNameCoRoutine.UpdateStashNames(names);
         }
         catch (Exception e)
         {
-            StashieCore.Main.LogError($"Cant get stash names when init. {e}");
+            StashManCore.Main.LogError($"Cant get stash names when init. {e}");
         }
     }
 

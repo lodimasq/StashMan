@@ -5,9 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using ExileCore2;
 using ExileCore2.Shared;
-using static Stashie.StashieCore;
+using static StashMan.StashManCore;
 
-namespace Stashie.Compartments;
+namespace StashMan.Compartments;
 
 public static class TaskRunner
 {
