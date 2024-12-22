@@ -27,24 +27,6 @@ internal class Utility
         streamWriter.Close();
     }
 
-    public static void SetupOrClose()
-    {
-        SaveDefaultConfigsToDisk();
-        StashManCore.Main.SettingsListNodes = new List<ListIndexNode>(100);
-        FilterManager.LoadCustomFilters();
-
-        try
-        {
-            StashManCore.Main.Settings.TabToVisitWhenDone.Max =
-                (int)StashManCore.Main.GameController.Game.IngameState.IngameUi.StashElement.TotalStashes - 1;
-            var names = StashManCore.Main.GameController.Game.IngameState.IngameUi.StashElement.AllStashNames;
-            StashTabNameCoRoutine.UpdateStashNames(names);
-        }
-        catch (Exception e)
-        {
-            StashManCore.Main.LogError($"Cant get stash names when init. {e}");
-        }
-    }
 
     public static bool CheckIgnoreCells(InventSlotItem inventItem, (int Width, int Height) containerSize,
         int[,] ignoredCells)

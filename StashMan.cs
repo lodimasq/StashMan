@@ -5,7 +5,6 @@ using ExileCore2;
 using ImGuiNET;
 using StashMan.Classes;
 using StashMan.Compartments;
-using StashMan.Filter;
 using Vector2N = System.Numerics.Vector2;
 
 namespace StashMan;
@@ -16,17 +15,7 @@ public class StashManCore : BaseSettingsPlugin<StashManSettings>
     public const string StashTabsNameChecker = "Stash Tabs Name Checker";
     public static StashManCore Main;
 
-    public static List<string> RenamedAllStashNames;
     public readonly Stopwatch DebugTimer = new();
-    public Vector2N ClickWindowOffset;
-
-    public List<CustomFilter> currentFilter;
-    public List<FilterResult> DropItems;
-    public Action FilterTabs;
-    public bool IsFilterEditorTab;
-    public List<ListIndexNode> SettingsListNodes;
-    public string[] StashTabNamesByIndex;
-    public int VisibleStashIndex = -1;
 
     public StashManCore()
     {
@@ -36,29 +25,34 @@ public class StashManCore : BaseSettingsPlugin<StashManSettings>
     public override bool Initialise()
     {
         Main = this;
+        Settings.StashData.Tabs.Clear();
         Settings.Enable.OnValueChanged += (sender, b) =>
         {
             if (b)
-                StashTabNameCoRoutine.InitStashTabNameCoRoutine();
+                UpdateStash.InitStashTabNameCoRoutine();
             else
                 TaskRunner.Stop(StashTabsNameChecker);
 
-            Utility.SetupOrClose();
+            // Utility.SetupOrClose();
         };
 
-
-        StashieEditorHandler.FileSaveName = Settings.ConfigLastSaved;
-        StashieEditorHandler.SelectedFileName = Settings.ConfigLastSaved;
-
-        StashTabNameCoRoutine.InitStashTabNameCoRoutine();
-        Utility.SetupOrClose();
-
-        Input.RegisterKey(Settings.DropHotkey);
-
-        Settings.DropHotkey.OnValueChanged += () => { Input.RegisterKey(Settings.DropHotkey); };
-        Settings.FilterFile.OnValueSelected = _ => FilterManager.LoadCustomFilters();
+        UpdateStash.InitStashTabNameCoRoutine();
+        // Utility.SetupOrClose();
 
         return true;
+    }
+
+    public override void OnUnload()
+    {
+        try
+        {
+            TaskRunner.Stop(StashTabsNameChecker);
+        }
+        catch (Exception e)
+        {
+            
+        }
+        base.OnUnload();
     }
 
     public override void Render()
@@ -69,17 +63,30 @@ public class StashManCore : BaseSettingsPlugin<StashManSettings>
 
         ImGui.SetNextWindowSize(new Vector2N(300, 200), ImGuiCond.FirstUseEver);
         ImGui.Begin("StashMan Debug");
-        ImGui.Text(Settings.AllStashNames.Count > 0
-            ? $"Stash Names: {string.Join(", ", Settings.AllStashNames)}"
-            : "No Stash Names");
+        ImGui.Text(TaskRunner.Has(StashTabsNameChecker)
+            ? "Stash Tabs Name Checker is running."
+            : "Stash Tabs Name Checker is not running.");
+        //list all stash names
+        if (Settings.StashData.GetAllStashNames() != null)
+            foreach (var name in Settings.StashData.GetAllStashNames())
+                ImGui.Text(name);
+
+        //if duplicate stash error show text and button to retry
+        if (Settings.DuplicateStashError)
+        {
+            ImGui.Text("Duplicate stash names found. Please retry.");
+            if (ImGui.Button("Retry"))
+            {
+                Settings.DuplicateStashError = false;
+            }
+        }
+
+        ImGui.End();
     }
 
     public override void DrawSettings()
     {
         base.DrawSettings();
-
-        Settings.ConfigLastSaved = StashieEditorHandler.FileSaveName;
-        Settings.ConfigLastSelected = StashieEditorHandler.SelectedFileName;
     }
 
     public override void ReceiveEvent(string eventId, object args)
@@ -101,27 +108,14 @@ public class StashManCore : BaseSettingsPlugin<StashManSettings>
 
     public override void AreaChange(AreaInstance area)
     {
-        if (area.IsHideout || area.IsTown)
-            StashTabNameCoRoutine.InitStashTabNameCoRoutine();
-        else
-            TaskRunner.Stop(StashTabsNameChecker);
+        // if (area.IsHideout || area.IsTown)
+        //     UpdateStash.InitStashTabNameCoRoutine();
+        // else
+        //     TaskRunner.Stop(StashTabsNameChecker);
     }
 
     public override void Tick()
     {
-        if (!StashingRequirementsMet())
-        {
-            TaskRunner.Stop("Stashie_DropItemsToStash");
-            return;
-        }
-
-        if (!Settings.DropHotkey.PressedOnce())
-            return;
-
-        if (TaskRunner.Has("Stashie_DropItemsToStash"))
-            ActionCoRoutine.StopCoroutine("Stashie_DropItemsToStash");
-        else
-            ActionCoRoutine.StartDropItemsToStashCoroutine();
     }
 
     public bool StashingRequirementsMet()

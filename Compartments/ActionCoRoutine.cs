@@ -32,6 +32,7 @@ public static class TaskRunner
 
     public static void Stop(string name)
     {
+        Main.LogMessage("Stopping coroutine: " + name);
         if (Tasks.TryGetValue(name, out var cts))
         {
             cts.Cancel();
@@ -66,7 +67,7 @@ internal class ActionCoRoutine
     public static async SyncTask<bool> ProcessSwitchToTab(int index)
     {
         Main.DebugTimer.Restart();
-        await ActionsHandler.SwitchToTab(index);
+        // await ActionsHandler.SwitchToTab(index);
         TaskRunner.Stop(CoroutineName);
 
         Main.DebugTimer.Restart();
@@ -76,31 +77,7 @@ internal class ActionCoRoutine
 
     public static async SyncTask<bool> DropToStashRoutine()
     {
-        var cursorPosPreMoving = Input.ForceMousePosition;
-
-        //try stashing items 3 times
-        var originTab = ActionsHandler.GetIndexOfCurrentVisibleTab();
-        await FilterManager.ParseItems();
-        for (var tries = 0; tries < 3 && Main.DropItems.Count > 0; ++tries)
-        {
-            if (Main.DropItems.Count > 0)
-                await ActionsHandler.StashItemsIncrementer();
-
-            await FilterManager.ParseItems();
-            await Task.Delay(Main.Settings.ExtraDelay);
-        }
-
-        if (Main.Settings.VisitTabWhenDone.Value)
-        {
-            if (Main.Settings.BackToOriginalTab.Value)
-                await ActionsHandler.SwitchToTab(originTab);
-            else
-                await ActionsHandler.SwitchToTab(Main.Settings.TabToVisitWhenDone.Value);
-        }
-
-        Input.SetCursorPos(cursorPosPreMoving);
-        Input.MouseMove();
-        StopCoroutine("Stashie_DropItemsToStash");
+        
         return true;
     }
 }
