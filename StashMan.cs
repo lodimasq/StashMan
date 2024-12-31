@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Numerics;
 using ExileCore2;
 using ImGuiNET;
 using StashMan.Classes;
@@ -50,8 +52,9 @@ public class StashManCore : BaseSettingsPlugin<StashManSettings>
         }
         catch (Exception e)
         {
-            
+            Main.LogError(e.ToString());
         }
+    
         base.OnUnload();
     }
 
@@ -66,19 +69,44 @@ public class StashManCore : BaseSettingsPlugin<StashManSettings>
         ImGui.Text(TaskRunner.Has(StashTabsNameChecker)
             ? "Stash Tabs Name Checker is running."
             : "Stash Tabs Name Checker is not running.");
-        //list all stash names
-        if (Settings.StashData.GetAllStashNames() != null)
-            foreach (var name in Settings.StashData.GetAllStashNames())
-                ImGui.Text(name);
-
-        //if duplicate stash error show text and button to retry
+        ImGui.SetNextWindowSize(new Vector2N(500, 400), ImGuiCond.FirstUseEver);
+        ImGui.Begin("StashMan Debug");
         if (Settings.DuplicateStashError)
         {
-            ImGui.Text("Duplicate stash names found. Please retry.");
+            ImGui.Text("Duplicate stash name detected. Please fix the issue and retry.");
             if (ImGui.Button("Retry"))
             {
                 Settings.DuplicateStashError = false;
+                UpdateStash.InitStashTabNameCoRoutine();
             }
+        }
+
+        if (ImGui.BeginTable("StashTabsTable", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
+        {
+            ImGui.TableSetupColumn("Name");
+            ImGui.TableSetupColumn("Type");
+            ImGui.TableSetupColumn("Number of Items");
+            ImGui.TableSetupColumn("Total Quantity");
+            ImGui.TableSetupColumn("Last Sync");
+            ImGui.TableHeadersRow();
+
+            foreach (var tab in Main.Settings.StashData.Tabs.Where(t => t.Type != "Unknown1").OrderBy(t => t.Index).ToList())
+            {
+                ImGui.TableNextRow();
+                ImGui.TableSetColumnIndex(0);
+                ImGui.Text(tab.Name);
+                ImGui.TableSetColumnIndex(1);
+                ImGui.Text(tab.Type);
+                ImGui.TableSetColumnIndex(2);
+                ImGui.Text(tab.Items.Count.ToString());
+                ImGui.TableSetColumnIndex(3);
+                ImGui.Text(tab.TotalItemQuantity.ToString());
+                ImGui.TableSetColumnIndex(4);
+                ImGui.Text(tab.LastGameSync.ToString("yy-MM-dd HH:mm:ss"));
+                ImGui.TableSetColumnIndex(5);
+            }
+
+            ImGui.EndTable();
         }
 
         ImGui.End();

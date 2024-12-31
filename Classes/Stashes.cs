@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace StashMan.Classes
@@ -18,6 +19,8 @@ namespace StashMan.Classes
         public string Name { get; set; } = name;
         public string Type { get; set; } = type;
         public List<StashItem> Items { get; set; } = [];
+        public int TotalItemQuantity => Items.Sum(item => item.Quantity);
+        public DateTime LastGameSync { get; set; }
     }
 
     // Represents the ordered list of stash tabs

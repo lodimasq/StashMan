@@ -11,7 +11,7 @@ using static StashMan.StashManCore;
 
 namespace StashMan.Compartments;
 
-internal class UpdateStash
+internal static class UpdateStash
 {
     private const string DefaultTabType = "Unknown";
 
@@ -20,81 +20,125 @@ internal class UpdateStash
         TaskRunner.Run(StashTabNamesUpdater_Thread, StashTabsNameChecker);
     }
 
-    public static void UpdateStashTabs(StashElement stashPanel)
+    private static void UpdateStashNames()
     {
-        var stashNames = Main.Settings.StashData.GetAllStashNames();
-        var newNames = stashPanel.AllStashNames;
+        var inventories = Main.GameController.Game.IngameState.IngameUi.StashElement.StashTabContainer.Inventories;
+        if (inventories == null) return;
 
-        if (stashNames.SequenceEqual(newNames))
+        var newTabs = inventories.Select((inventory, index) =>
+            new StashTab(index, inventory.TabName, inventory.Inventory?.InvType.ToString() ?? DefaultTabType)
+                { Items = new List<StashItem>() }).ToList();
+        
+        newTabs.RemoveAll(t => t.Name.Contains("(Unavailable)"));
+
+        var storedTabs = Main.Settings.StashData.Tabs;
+
+        // 1) Quick check for duplicates in new tabs by name
+        if (newTabs.GroupBy(t => t.Name).Any(g => g.Count() > 1))
         {
-            Main.LogMsg("No changes detected in stash tabs.");
-            return;
-        }
-
-        // Create a lookup for efficient tab updates
-        var stashTabsByName = Main.Settings.StashData.Tabs.ToDictionary(tab => tab.Name);
-
-        var updatedTabs = new List<StashTab>();
-        var seenNames = new HashSet<string>(); // Track duplicates during update
-        var serverStashTabs = Main.GameController.IngameState.ServerData.PlayerStashTabs;
-
-        for (var index = 0; index < newNames.Count; index++)
-        {
-            var name = newNames[index];
-
-            // Detect duplicates in new names
-            if (!seenNames.Add(name))
-            {
-                Main.LogMsg($"Duplicate stash name detected during update: {name}. Update aborted.");
-                Main.Settings.DuplicateStashError = true;
-                return;
-            }
-
-            if (stashTabsByName.TryGetValue(name, out var existingTab))
-            {
-                // Reorder existing tab
-                existingTab.Index = index;
-                updatedTabs.Add(existingTab);
-            }
-            else
-            {
-                // Add new tab
-                updatedTabs.Add(new StashTab(index, name,
-                    serverStashTabs.FirstOrDefault(tab => tab.Name == name)?.TabType.ToString() ?? DefaultTabType)
-                {
-                    Items = new List<StashItem>()
-                });
-            }
-        }
-
-        // Update stash data only if no duplicates were found
-        Main.Settings.StashData.Tabs = updatedTabs;
-        Main.LogMsg($"Updated stash tabs. Total: {updatedTabs.Count}");
-    }
-
-
-    public static void InitStashTabs(StashElement stashPanel)
-    {
-        var stashNames = stashPanel.AllStashNames;
-
-        if (stashNames.Distinct().Count() != stashNames.Count)
-        {
-            Main.LogMsg("Duplicate stash names detected. Initialization aborted.");
-            Main.Settings.StashData.Tabs.Clear();
+            Main.LogMessage("Duplicate stash names detected in new data.");
             Main.Settings.DuplicateStashError = true;
             return;
         }
 
+        // 2) Build dictionaries from old data
+        var oldTabsByName = storedTabs.ToDictionary(t => t.Name);
+        var oldTabsByIndex = storedTabs.ToDictionary(t => t.Index);
 
-        var serverStashTabs = Main.GameController.IngameState.ServerData.PlayerStashTabs;
-        var tabs = stashNames.Select((name, index) => new StashTab(index, name,
-            serverStashTabs.FirstOrDefault(tab => tab.Name == name)?.TabType.ToString() ?? DefaultTabType)
+        // 3) Process each new tab
+        foreach (var newTab in newTabs)
         {
-            Items = new List<StashItem>()
-        }).ToList();
+            // Try matching by NAME first
+            if (oldTabsByName.TryGetValue(newTab.Name, out var oldTabByName))
+            {
+                // Update properties (Index, Type, Items, etc.)
+                UpdateExistingTab(oldTabByName, newTab);
+            }
+            else
+            {
+                // If the name doesn't match, let's see if there's an old tab with the same INDEX
+                if (oldTabsByIndex.TryGetValue(newTab.Index, out var oldTabByIndex))
+                {
+                    // We found a tab by the same INDEX but different name => it's a rename event
+                    var oldName = oldTabByIndex.Name;
+                    var newName = newTab.Name;
+
+                    Main.LogMessage($"Detected rename from '{oldName}' to '{newName}' at index {newTab.Index}.");
+
+                    // Remove oldTabByIndex from the name dictionary so we can re-insert with new name
+                    oldTabsByName.Remove(oldName);
+
+                    // Update the tab's name
+                    oldTabByIndex.Name = newName;
+
+                    // Update other properties if needed
+                    UpdateExistingTab(oldTabByIndex, newTab);
+
+                    // Now add it back to oldTabsByName with the new name
+                    oldTabsByName[newName] = oldTabByIndex;
+                }
+                else
+                {
+                    // It's neither found by name nor index => treat as brand-new
+                    storedTabs.Add(newTab);
+                    Main.LogMessage($"New stash tab: {newTab.Name} (Index={newTab.Index}).");
+
+                    // Also update dictionaries (optional, if we want to keep them “live”)
+                    oldTabsByName[newTab.Name] = newTab;
+                    oldTabsByIndex[newTab.Index] = newTab;
+                }
+            }
+        }
+
+        // 4) Remove old tabs that no longer exist in the new set
+        var newIndexes = newTabs.Select(t => t.Index).ToHashSet();
+        storedTabs.RemoveAll(oldTab => !newIndexes.Contains(oldTab.Index));
+        
+        // 5) re-sort the tabs by index
+        storedTabs.Sort((a, b) => a.Index.CompareTo(b.Index));
+    }
+
+    private static void UpdateExistingTab(StashTab oldTab, StashTab newTab)
+    {
+        // If the old index is different, update it (though in theory we matched by index, so it might not differ)
+        if (oldTab.Index != newTab.Index)
+        {
+            Main.LogMessage($"Tab '{oldTab.Name}' index changed from {oldTab.Index} to {newTab.Index}.");
+            oldTab.Index = newTab.Index;
+        }
+
+        // Update type if the new type is known
+        if (!string.IsNullOrEmpty(newTab.Type) && newTab.Type != "Unknown" && oldTab.Type != newTab.Type)
+        {
+            Main.LogMessage($"Tab '{oldTab.Name}' type changed from {oldTab.Type} to {newTab.Type}.");
+            oldTab.Type = newTab.Type;
+        }
+
+        // Compare and update Items if they differ
+        // ...
+    }
+
+
+    private static void InitStashTabs()
+    {
+        var inventories = Main.GameController.Game.IngameState?.IngameUi?.StashElement.StashTabContainer.Inventories;
+
+        if (inventories == null) return;
+
+        if (inventories.DistinctBy(t => t.TabName).Count() != inventories.Count)
+        {
+            Main.LogMessage("Duplicate stash names detected.");
+            Main.Settings.DuplicateStashError = true;
+        }
+
+        var tabs = inventories.Select((inventory, index) =>
+            new StashTab(index, inventory.TabName, inventory.Inventory?.InvType.ToString() ?? DefaultTabType)
+                { Items = new List<StashItem>() }).ToList();
+        
+        tabs.RemoveAll(t => t.Name.Contains("(Unavailable)"));
 
         Main.Settings.StashData.Tabs = tabs;
-        Main.LogMsg($"Initialized {tabs.Count} stash tabs.");
+        Main.LogMessage($"Initialized {tabs.Count} stash tabs.");
     }
 
     private static bool HaveTabsChanged(IList<string> stashNames, IList<string> newNames)
@@ -102,7 +146,7 @@ internal class UpdateStash
         return !stashNames.SequenceEqual(newNames);
     }
 
-    public static async SyncTask<bool> StashTabNamesUpdater_Thread()
+    private static async SyncTask<bool> StashTabNamesUpdater_Thread()
     {
         while (true)
         {
@@ -115,26 +159,51 @@ internal class UpdateStash
             var stashPanel = Main.GameController.Game.IngameState?.IngameUi?.StashElement;
             if (stashPanel == null || !stashPanel.IsVisibleLocal)
             {
-                Main.LogMsg("Waiting for stash panel...");
+                Main.LogMessage("Waiting for stash panel...");
                 await Task.Delay(1000);
                 continue;
             }
 
-            var stashNames = Main.Settings.StashData.GetAllStashNames();
+            var stashNames = Main.Settings.StashData?.GetAllStashNames() ?? new List<string>();
             if (stashNames.Count == 0)
             {
-                InitStashTabs(stashPanel);
-                continue;
+                try
+                {
+                    InitStashTabs();
+                    Main.LogMessage("Stash tab names initialized.");
+                    await Task.Delay(1000);
+                    continue;
+                }
+                catch (Exception e)
+                {
+                    Main.LogError("Failed to initialize stash tabs: " + e);
+                    throw;
+                }
             }
 
-            var newNames = stashPanel.AllStashNames;
+            var newNames = stashPanel.Inventories.Select(t => t.TabName).ToList();
+           
+            // remove names with "(Unavailable)"
+            newNames.RemoveAll(n => n.Contains("(Unavailable)"));
 
             if (HaveTabsChanged(stashNames, newNames))
-            {
-                UpdateStashTabs(stashPanel);
-                continue;
+            {   
+                try
+                {
+                    UpdateStashNames();
+                    Main.LogMessage("Stash tab names have changed.");
+                    await Task.Delay(1000);
+                    continue;
+                }
+                catch (Exception e)
+                {
+                    Main.LogError("Failed to update stash tabs: " + e);
+                    throw;
+                }
+                
             }
 
+            Main.LogMessage("Stash tab names have not changed.");
             await Task.Delay(1000);
         }
     }
