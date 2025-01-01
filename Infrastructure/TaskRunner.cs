@@ -12,7 +12,7 @@ namespace StashMan.Infrastructure
     /// </summary>
     public static class TaskRunner
     {
-        private static readonly ConcurrentDictionary<string, CancellationTokenSource> ActiveTasks 
+        public static readonly ConcurrentDictionary<string, CancellationTokenSource> ActiveTasks 
             = new ConcurrentDictionary<string, CancellationTokenSource>();
 
         public static void Run(Func<Task> job, string name)

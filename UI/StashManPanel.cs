@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using StashMan.Infrastructure;
 using StashMan.Models;
 
 namespace StashMan.UI
@@ -10,41 +11,36 @@ namespace StashMan.UI
     /// </summary>
     public static class StashManPanel
     {
-        public static bool IsVisible { get; set; } = true;
+        private static bool _pOpen;
+        private static bool IsVisible { get; set; } = true;
 
         public static void DrawPanel(Stash stashData)
         {
-            var pOpen = IsVisible;
-            if (!pOpen) return;
+            _pOpen = IsVisible;
+            if (_pOpen)
 
-            ImGui.SetNextWindowSize(new Vector2(600, 400), ImGuiCond.FirstUseEver);
-            if (ImGui.Begin("StashMan Debug Panel", ref pOpen))
+                ImGui.Begin("StashMan Debug Panel", ref _pOpen, ImGuiWindowFlags.AlwaysAutoResize);
+
+            // Display stash data
+            ImGui.Text("Stash Data:");
+            foreach (var tab in stashData.Tabs)
             {
-                ImGui.Text("Stash Tabs:");
-                if (ImGui.BeginTable("StashTabsTable", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
+                ImGui.Text($"Tab: {tab.Name}, Type: {tab.Type}, GridSize: {tab.GridSize}");
+                foreach (var item in tab.Items)
                 {
-                    ImGui.TableSetupColumn("Index");
-                    ImGui.TableSetupColumn("Name");
-                    ImGui.TableSetupColumn("Type");
-                    ImGui.TableSetupColumn("Items Count");
-                    ImGui.TableHeadersRow();
-
-                    foreach (var tab in stashData.Tabs)
-                    {
-                        ImGui.TableNextRow();
-                        ImGui.TableSetColumnIndex(0);
-                        ImGui.Text(tab.Index.ToString());
-                        ImGui.TableSetColumnIndex(1);
-                        ImGui.Text(tab.Name);
-                        ImGui.TableSetColumnIndex(2);
-                        ImGui.Text(tab.Type);
-                        ImGui.TableSetColumnIndex(3);
-                        ImGui.Text(tab.Items.Count.ToString());
-                    }
-
-                    ImGui.EndTable();
+                    ImGui.Text($"  Item: {item.BaseName}, Quantity: {item.Quantity}");
                 }
             }
+
+            // Display running tasks
+            ImGui.Separator();
+            ImGui.Text("Running Tasks:");
+            foreach (var task in TaskRunner.ActiveTasks)
+            {
+                ImGui.Text(
+                    $"Task: {task.Key}, Status: {(task.Value.Token.IsCancellationRequested ? "Cancelling" : "Running")}   ");
+            }
+
             ImGui.End();
         }
     }

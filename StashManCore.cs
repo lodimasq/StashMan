@@ -4,6 +4,7 @@ using StashMan.Events.EventHandlers;
 using StashMan.Managers;
 using System.Threading.Tasks;
 using StashMan.Infrastructure;
+using StashMan.UI;
 
 namespace StashMan
 {
@@ -82,8 +83,7 @@ namespace StashMan
         {
             if (!Settings.Enable) return;
 
-            // Draw a small UI debug panel if you like
-            // e.g. StashManPanel.DrawPanel(Settings.StashData);
+            StashManPanel.DrawPanel(Settings.StashData);
 
             base.Render();
         }
