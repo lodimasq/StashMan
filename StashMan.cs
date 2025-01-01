@@ -58,59 +58,59 @@ public class StashManCore : BaseSettingsPlugin<StashManSettings>
         base.OnUnload();
     }
 
-    public override void Render()
-    {
-        if (!Settings.Enable.Value) return;
-
-        // Draw a debug window
-
-        ImGui.SetNextWindowSize(new Vector2N(300, 200), ImGuiCond.FirstUseEver);
-        ImGui.Begin("StashMan Debug");
-        ImGui.Text(TaskRunner.Has(StashTabsNameChecker)
-            ? "Stash Tabs Name Checker is running."
-            : "Stash Tabs Name Checker is not running.");
-        ImGui.SetNextWindowSize(new Vector2N(500, 400), ImGuiCond.FirstUseEver);
-        ImGui.Begin("StashMan Debug");
-        if (Settings.DuplicateStashError)
-        {
-            ImGui.Text("Duplicate stash name detected. Please fix the issue and retry.");
-            if (ImGui.Button("Retry"))
-            {
-                Settings.DuplicateStashError = false;
-                UpdateStash.InitStashTabNameCoRoutine();
-            }
-        }
-
-        if (ImGui.BeginTable("StashTabsTable", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
-        {
-            ImGui.TableSetupColumn("Name");
-            ImGui.TableSetupColumn("Type");
-            ImGui.TableSetupColumn("Number of Items");
-            ImGui.TableSetupColumn("Total Quantity");
-            ImGui.TableSetupColumn("Last Sync");
-            ImGui.TableHeadersRow();
-
-            foreach (var tab in Main.Settings.StashData.Tabs.Where(t => t.Type != "Unknown1").OrderBy(t => t.Index).ToList())
-            {
-                ImGui.TableNextRow();
-                ImGui.TableSetColumnIndex(0);
-                ImGui.Text(tab.Name);
-                ImGui.TableSetColumnIndex(1);
-                ImGui.Text(tab.Type);
-                ImGui.TableSetColumnIndex(2);
-                ImGui.Text(tab.Items.Count.ToString());
-                ImGui.TableSetColumnIndex(3);
-                ImGui.Text(tab.TotalItemQuantity.ToString());
-                ImGui.TableSetColumnIndex(4);
-                ImGui.Text(tab.LastGameSync.ToString("yy-MM-dd HH:mm:ss"));
-                ImGui.TableSetColumnIndex(5);
-            }
-
-            ImGui.EndTable();
-        }
-
-        ImGui.End();
-    }
+    // public override void Render()
+    // {
+    //     if (!Settings.Enable.Value) return;
+    //
+    //     // Draw a debug window
+    //
+    //     ImGui.SetNextWindowSize(new Vector2N(300, 200), ImGuiCond.FirstUseEver);
+    //     ImGui.Begin("StashMan Debug");
+    //     ImGui.Text(TaskRunner.Has(StashTabsNameChecker)
+    //         ? "Stash Tabs Name Checker is running."
+    //         : "Stash Tabs Name Checker is not running.");
+    //     ImGui.SetNextWindowSize(new Vector2N(500, 400), ImGuiCond.FirstUseEver);
+    //     ImGui.Begin("StashMan Debug");
+    //     if (Settings.DuplicateStashError)
+    //     {
+    //         ImGui.Text("Duplicate stash name detected. Please fix the issue and retry.");
+    //         if (ImGui.Button("Retry"))
+    //         {
+    //             Settings.DuplicateStashError = false;
+    //             UpdateStash.InitStashTabNameCoRoutine();
+    //         }
+    //     }
+    //
+    //     if (ImGui.BeginTable("StashTabsTable", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
+    //     {
+    //         ImGui.TableSetupColumn("Name");
+    //         ImGui.TableSetupColumn("Type");
+    //         ImGui.TableSetupColumn("Number of Items");
+    //         ImGui.TableSetupColumn("Total Quantity");
+    //         ImGui.TableSetupColumn("Last Sync");
+    //         ImGui.TableHeadersRow();
+    //
+    //         foreach (var tab in Main.Settings.StashData.Tabs.Where(t => t.Type != "Unknown1").OrderBy(t => t.Index).ToList())
+    //         {
+    //             ImGui.TableNextRow();
+    //             ImGui.TableSetColumnIndex(0);
+    //             ImGui.Text(tab.Name);
+    //             ImGui.TableSetColumnIndex(1);
+    //             ImGui.Text(tab.Type);
+    //             ImGui.TableSetColumnIndex(2);
+    //             ImGui.Text(tab.Items.Count.ToString());
+    //             ImGui.TableSetColumnIndex(3);
+    //             ImGui.Text(tab.TotalItemQuantity.ToString());
+    //             ImGui.TableSetColumnIndex(4);
+    //             ImGui.Text(tab.LastUpdatedDateTime.ToString("yy-MM-dd HH:mm:ss"));
+    //             ImGui.TableSetColumnIndex(5);
+    //         }
+    //
+    //         ImGui.EndTable();
+    //     }
+    //
+    //     ImGui.End();
+    // }
 
     public override void DrawSettings()
     {

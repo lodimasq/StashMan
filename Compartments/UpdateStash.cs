@@ -4,8 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using ExileCore2;
 using ExileCore2.PoEMemory;
+using ExileCore2.PoEMemory.Components;
 using ExileCore2.PoEMemory.Elements;
+using ExileCore2.PoEMemory.Elements.InventoryElements;
 using ExileCore2.Shared;
+using ExileCore2.Shared.Static;
+using Microsoft.VisualBasic.Logging;
 using StashMan.Classes;
 using static StashMan.StashManCore;
 
@@ -25,15 +29,17 @@ internal static class UpdateStash
         var inventories = Main.GameController.Game.IngameState.IngameUi.StashElement.StashTabContainer.Inventories;
         if (inventories == null) return;
 
-        var newTabs = inventories.Select((inventory, index) =>
-            new StashTab(index, inventory.TabName, inventory.Inventory?.InvType.ToString() ?? DefaultTabType)
-                { Items = new List<StashItem>() }).ToList();
-        
-        newTabs.RemoveAll(t => t.Name.Contains("(Unavailable)"));
+        var newTabs = inventories
+            .Where(inventory => !inventory.TabName.Contains("(Unavailable)"))
+            .Select((inventory, index) =>
+                new StashTab(index, inventory.TabName, inventory.Inventory?.InvType.ToString() ?? DefaultTabType,
+                        inventory.Inventory?.TotalBoxesInInventoryRow ?? 0)
+                    { Items = [] })
+            .ToList();
 
         var storedTabs = Main.Settings.StashData.Tabs;
 
-        // 1) Quick check for duplicates in new tabs by name
+        // Quick check for duplicates in new tabs by name
         if (newTabs.GroupBy(t => t.Name).Any(g => g.Count() > 1))
         {
             Main.LogMessage("Duplicate stash names detected in new data.");
@@ -41,11 +47,11 @@ internal static class UpdateStash
             return;
         }
 
-        // 2) Build dictionaries from old data
+        // Build dictionaries from old data
         var oldTabsByName = storedTabs.ToDictionary(t => t.Name);
         var oldTabsByIndex = storedTabs.ToDictionary(t => t.Index);
 
-        // 3) Process each new tab
+        // Process each new tab
         foreach (var newTab in newTabs)
         {
             // Try matching by NAME first
@@ -93,7 +99,7 @@ internal static class UpdateStash
         // 4) Remove old tabs that no longer exist in the new set
         var newIndexes = newTabs.Select(t => t.Index).ToHashSet();
         storedTabs.RemoveAll(oldTab => !newIndexes.Contains(oldTab.Index));
-        
+
         // 5) re-sort the tabs by index
         storedTabs.Sort((a, b) => a.Index.CompareTo(b.Index));
     }
@@ -114,32 +120,83 @@ internal static class UpdateStash
             oldTab.Type = newTab.Type;
         }
 
-        // Compare and update Items if they differ
-        // ...
+        oldTab.LastUpdatedDateTime = DateTime.Now;
     }
 
 
     private static void InitStashTabs()
     {
-        var inventories = Main.GameController.Game.IngameState?.IngameUi?.StashElement.StashTabContainer.Inventories;
-
+        var inventories = Main.GameController.Game.IngameState?.IngameUi?.StashElement?.StashTabContainer?.Inventories;
         if (inventories == null) return;
 
+        // Check for duplicate stash names
         if (inventories.DistinctBy(t => t.TabName).Count() != inventories.Count)
         {
             Main.LogMessage("Duplicate stash names detected.");
             Main.Settings.DuplicateStashError = true;
         }
 
-        var tabs = inventories.Select((inventory, index) =>
-            new StashTab(index, inventory.TabName, inventory.Inventory?.InvType.ToString() ?? DefaultTabType)
-                { Items = new List<StashItem>() }).ToList();
-        
-        tabs.RemoveAll(t => t.Name.Contains("(Unavailable)"));
+        var tabs = inventories
+            // Skip any stash tab labeled "(Unavailable)"
+            .Where(inventory => !inventory.TabName.Contains("(Unavailable)"))
+            .Select((inventory, index) =>
+            {
+                // Build an array of items for this stash tab, ensuring it's never null
+                var visibleItems = inventory.Inventory?.VisibleInventoryItems?
+                                       .Select(item =>
+                                       {
+                                           // If we can’t safely get ‘Base’ or ‘Stack’ components, skip or handle them
+                                           var baseComponent =
+                                               item.Entity.GetComponent<ExileCore2.PoEMemory.Components.Base>();
+                                           var stackComponent =
+                                               item.Entity.GetComponent<ExileCore2.PoEMemory.Components.Stack>();
+
+                                           if (baseComponent?.Info?.BaseItemTypeDat == null || stackComponent == null)
+                                               return null;
+
+                                           var rect = item.GetClientRectCache;
+
+                                           return new StashItem(
+                                               baseComponent.Info.BaseItemTypeDat.BaseName,
+                                               baseComponent.Info.BaseItemTypeDat.ClassName,
+                                               price: 0,
+                                               quantity: stackComponent.Size,
+                                               isFullStack: stackComponent.FullStack,
+                                               new ItemPosition(
+                                                   item.ItemHeight,
+                                                   item.ItemWidth,
+                                                   item.Height,
+                                                   item.Width,
+                                                   rect.TopLeft,
+                                                   rect.BottomRight
+                                               )
+                                           );
+                                       })
+                                       // Filter out any nulls returned by the selector
+                                       .Where(x => x != null)
+                                       // Convert to array
+                                       .ToArray()
+                                   // If everything was null or the chain was null, fallback to an empty array
+                                   ?? [];
+
+                return new StashTab(
+                    index,
+                    inventory.TabName,
+                    inventory.Inventory?.InvType.ToString() ?? DefaultTabType,
+                    inventory.Inventory?.TotalBoxesInInventoryRow ?? 0
+                )
+                {
+                    // Safely assign the non-null array to the Items list
+                    Items = [..visibleItems]
+                };
+            })
+            // Finally, build the list of all stash tabs
+            .ToList();
 
         Main.Settings.StashData.Tabs = tabs;
         Main.LogMessage($"Initialized {tabs.Count} stash tabs.");
     }
+
 
     private static bool HaveTabsChanged(IList<string> stashNames, IList<string> newNames)
     {
@@ -159,7 +216,7 @@ internal static class UpdateStash
             var stashPanel = Main.GameController.Game.IngameState?.IngameUi?.StashElement;
             if (stashPanel == null || !stashPanel.IsVisibleLocal)
             {
-                Main.LogMessage("Waiting for stash panel...");
+                // Main.LogMessage("Waiting for stash panel...");
                 await Task.Delay(1000);
                 continue;
             }
@@ -181,13 +238,13 @@ internal static class UpdateStash
                 }
             }
 
-            var newNames = stashPanel.Inventories.Select(t => t.TabName).ToList();
-           
-            // remove names with "(Unavailable)"
-            newNames.RemoveAll(n => n.Contains("(Unavailable)"));
+            var newNames = stashPanel.Inventories
+                .Select(t => t.TabName)
+                .Where(name => !name.Contains("(Unavailable)"))
+                .ToList();
 
             if (HaveTabsChanged(stashNames, newNames))
-            {   
+            {
                 try
                 {
                     UpdateStashNames();
@@ -200,10 +257,9 @@ internal static class UpdateStash
                     Main.LogError("Failed to update stash tabs: " + e);
                     throw;
                 }
-                
             }
 
-            Main.LogMessage("Stash tab names have not changed.");
+            // Main.LogMessage("Stash tab names have not changed.");
             await Task.Delay(1000);
         }
     }
