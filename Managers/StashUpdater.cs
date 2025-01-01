@@ -30,7 +30,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
                 }
                 else
                 {
-                    stashManager.AddTab(memoryTab.Index, memoryTab.Name, memoryTab.Type, memoryTab.GridSize);
+                    stashManager.AddTab(memoryTab.Index, memoryTab.Name, memoryTab.Type);
                 }
             }
         }
@@ -56,8 +56,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
                 .Where(inventory => !inventory.TabName.Contains("(Unavailable)"))
                 .Select((inventory, index) =>
                     new StashTab(index, inventory.TabName,
-                            inventory.Inventory?.InvType.ToString() ?? "Unknown",
-                            inventory.Inventory?.TotalBoxesInInventoryRow ?? 0)
+                            inventory.Inventory?.InvType.ToString() ?? "Unknown")
                         { Items = [] })
                 .ToArray();
         }

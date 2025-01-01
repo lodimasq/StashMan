@@ -81,18 +81,16 @@ namespace StashMan.Models
         public List<StashItem> Items { get; set; } = new();
         public DateTime LastUpdatedDateTime { get; set; }
         public int TotalItemQuantity => Items.Sum(item => item.Quantity);
-        public long GridSize { get; set; }
 
         public StashTab()
         {
         }
 
-        public StashTab(int index, string name, string type, long gridSize)
+        public StashTab(int index, string name, string type)
         {
             Index = index;
             Name = name;
             Type = type;
-            GridSize = gridSize;
         }
     }
 

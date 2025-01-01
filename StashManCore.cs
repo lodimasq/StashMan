@@ -1,5 +1,5 @@
 ﻿using System;
-using ExileCore2; 
+using ExileCore2;
 using StashMan.Events.EventHandlers;
 using StashMan.Managers;
 using System.Threading.Tasks;
@@ -34,23 +34,45 @@ namespace StashMan
             Main = this;
             LogMessage("StashManCore initializing...", 5);
 
-            // 1) Set up our managers
-            //    We keep StashData in PluginConfig, so let's pass it here.
-            //    This ensures the same Stash instance is used across managers.
             _stashManager = new StashManager(Settings.StashData);
             _itemManager = new ItemManager();
             _stashUpdater = new StashUpdater(_stashManager, _itemManager);
 
-            // 2) (Optional) Register event handlers (e.g. Logging, Price)
             LoggingEventHandler.Register();
             PriceEventHandler.Register();
 
-            // 3) Optionally start a TaskRunner that periodically refreshes stash data
-            //    For demonstration, let's do a background refresh every 3 seconds.
-            TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
+            Settings.Enable.OnValueChanged += (sender, b) =>
+            {
+                if (b && IsTownOrHideout())
+                    TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
+                else
+                {
+                    StopTasksAndUnload();
+                }
+            };
+
+            if (Settings.Enable && IsTownOrHideout())
+                TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
 
             LogMessage("StashManCore initialized.", 5);
             return true;
+        }
+
+        private static bool IsTownOrHideout()
+        {
+            return Main.GameController.IngameState.Data.CurrentWorldArea.IsTown ||
+                   Main.GameController.IngameState.Data.CurrentWorldArea.IsHideout;
+        }
+
+        private void StopTasksAndUnload()
+        {
+            var tasks = TaskRunner.ActiveTasks;
+            foreach (var task in tasks)
+            {
+                TaskRunner.Stop(task.Key);
+            }
+
+            LogMessage("StashManCore unloaded.", 5);
         }
 
         /// <summary>
@@ -61,16 +83,16 @@ namespace StashMan
         {
             while (true)
             {
-                try
+                if (Main.GameController.IngameState.IngameUi.StashElement.IsVisible)
                 {
-                    // You could check if stash is visible or if the user is in town/hideout
-                    // or just blindly refresh each loop:
-
-                    _stashUpdater.RefreshStashData();
-                }
-                catch (Exception e)
-                {
-                    LogError($"Error in StashRefreshLoop: {e}");
+                    try
+                    {
+                        _stashUpdater.RefreshStashData();
+                    }
+                    catch (Exception e)
+                    {
+                        LogError($"Error in StashRefreshLoop: {e}");
+                    }
                 }
 
                 // Sleep for a few seconds between refreshes
@@ -88,6 +110,7 @@ namespace StashMan
             base.Render();
         }
 
+
         public override void DrawSettings()
         {
             // Place plugin settings UI code here if needed
@@ -97,11 +120,10 @@ namespace StashMan
 
         public override void AreaChange(AreaInstance area)
         {
-            // If you only want to update stash data in town/hideout, you could do:
-            // if (area.IsTown || area.IsHideout)
-            //     TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
-            // else
-            //     TaskRunner.Stop(StashRefreshTaskName);
+            if (area.IsTown || area.IsHideout)
+                TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
+            else
+                TaskRunner.Stop(StashRefreshTaskName);
 
             base.AreaChange(area);
         }
@@ -116,12 +138,14 @@ namespace StashMan
 
         public override void OnUnload()
         {
-            // Stop any ongoing tasks
-            TaskRunner.Stop(StashRefreshTaskName);
-
-            // Cleanup or disposal logic
-            LogMessage("StashManCore unloaded.", 5);
+            StopTasksAndUnload();
             base.OnUnload();
+        }
+
+        public override void OnPluginDestroyForHotReload()
+        {
+            StopTasksAndUnload();
+            base.OnPluginDestroyForHotReload();
         }
 
         /// <summary>

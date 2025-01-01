@@ -25,7 +25,7 @@ namespace StashMan.UI
             ImGui.Text("Stash Data:");
             foreach (var tab in stashData.Tabs)
             {
-                ImGui.Text($"Tab: {tab.Name}, Type: {tab.Type}, GridSize: {tab.GridSize}");
+                ImGui.Text($"Tab: {tab.Name}, Type: {tab.Type}");
                 foreach (var item in tab.Items)
                 {
                     ImGui.Text($"  Item: {item.BaseName}, Quantity: {item.Quantity}");

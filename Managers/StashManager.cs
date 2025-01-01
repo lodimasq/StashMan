@@ -22,9 +22,9 @@ namespace StashMan.Managers
         /// <summary>
         /// Create and add a new tab to the stash.
         /// </summary>
-        public StashTab AddTab(int index, string name, string type, long gridSize)
+        public StashTab AddTab(int index, string name, string type)
         {
-            var newTab = new StashTab(index, name, type, gridSize);
+            var newTab = new StashTab(index, name, type);
             stash.Tabs.Add(newTab);
 
             // Optionally re-sort by index or keep them in the add order
