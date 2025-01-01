@@ -78,21 +78,21 @@ namespace StashMan.Models
         public int Index { get; set; }
         public string Name { get; set; }
         public string Type { get; set; }
-        public List<StashItem> Items { get; set; } = new();
+        public bool IsVisible { get; set; } = false;
+    
+        [IgnoreUpdate]
+        public List<StashItem> Items { get; set; } = new List<StashItem>();
+
+        [IgnoreUpdate]
         public DateTime LastUpdatedDateTime { get; set; }
-        public int TotalItemQuantity => Items.Sum(item => item.Quantity);
-
-        public StashTab()
-        {
-        }
-
-        public StashTab(int index, string name, string type)
-        {
-            Index = index;
-            Name = name;
-            Type = type;
-        }
     }
+
+    
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    public class IgnoreUpdateAttribute : Attribute
+    {
+    }
+
 
     /// <summary>
     /// Represents the ordered list of stash tabs.

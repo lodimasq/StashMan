@@ -24,7 +24,7 @@ namespace StashMan.Managers
         /// </summary>
         public StashTab AddTab(int index, string name, string type)
         {
-            var newTab = new StashTab(index, name, type);
+            var newTab = new StashTab { Index = index, Name = name, Type = type };
             stash.Tabs.Add(newTab);
 
             // Optionally re-sort by index or keep them in the add order
@@ -77,7 +77,6 @@ namespace StashMan.Managers
             {
                 StashManCore.Main.LogError($"Error updating tab property {prop.Name}: {e.Message}");
             }
-            
         }
 
         /// <summary>

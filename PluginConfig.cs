@@ -1,4 +1,5 @@
-﻿using ExileCore2.Shared.Attributes;
+﻿using System;
+using ExileCore2.Shared.Attributes;
 using ExileCore2.Shared.Interfaces;
 using ExileCore2.Shared.Nodes;
 using StashMan.Models;
@@ -21,6 +22,9 @@ namespace StashMan
         // you might do so here, or keep it purely in memory.
         [IgnoreMenu]
         public Stash StashData { get; set; } = new Stash();
+        
+        [IgnoreMenu]
+        public DateTime ThreadStarted { get; set; }
 
         // public PluginConfig()
         // {

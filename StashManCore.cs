@@ -2,6 +2,7 @@
 using ExileCore2;
 using StashMan.Events.EventHandlers;
 using StashMan.Managers;
+using System.Threading;
 using System.Threading.Tasks;
 using StashMan.Infrastructure;
 using StashMan.UI;
@@ -41,10 +42,12 @@ namespace StashMan
             LoggingEventHandler.Register();
             PriceEventHandler.Register();
 
-            Settings.Enable.OnValueChanged += (sender, b) =>
+            Settings.Enable.OnValueChanged += (sender, enabled) =>
             {
-                if (b && IsTownOrHideout())
+                if (enabled && IsTownOrHideout())
+                {
                     TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
+                }
                 else
                 {
                     StopTasksAndUnload();
@@ -52,7 +55,9 @@ namespace StashMan
             };
 
             if (Settings.Enable && IsTownOrHideout())
+            {
                 TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
+            }
 
             LogMessage("StashManCore initialized.", 5);
             return true;
@@ -66,39 +71,48 @@ namespace StashMan
 
         private void StopTasksAndUnload()
         {
-            var tasks = TaskRunner.ActiveTasks;
-            foreach (var task in tasks)
-            {
-                TaskRunner.Stop(task.Key);
-            }
-
+            TaskRunner.Stop(StashRefreshTaskName);
             LogMessage("StashManCore unloaded.", 5);
         }
 
         /// <summary>
-        /// A simple loop that calls _stashUpdater.RefreshStashDataAsync()
+        /// A simple loop that calls _stashUpdater.RefreshStashData()
         /// every few seconds in the background, as long as the stash panel is open, etc.
         /// </summary>
-        private async Task StashRefreshLoop()
+        private async Task StashRefreshLoop(CancellationToken token)
         {
-            while (true)
-            {
-                if (Main.GameController.IngameState.IngameUi.StashElement.IsVisible)
-                {
-                    try
-                    {
-                        _stashUpdater.RefreshStashData();
-                    }
-                    catch (Exception e)
-                    {
-                        LogError($"Error in StashRefreshLoop: {e}");
-                    }
-                }
+            Settings.ThreadStarted = DateTime.Now;
 
-                // Sleep for a few seconds between refreshes
-                await Task.Delay(3000);
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    Main.LogMessage("StashRefresh Pulse... Started at: " + Settings.ThreadStarted);
+
+                    if (Main.GameController.IngameState.IngameUi.StashElement.IsVisible)
+                    {
+                        try
+                        {
+                            _stashUpdater.RefreshStashData();
+                        }
+                        catch (Exception e)
+                        {
+                            LogError($"Error in StashRefreshLoop: {e}");
+                        }
+                    }
+
+                    // Sleep for a few seconds between refreshes, honoring cancellation
+                    await Task.Delay(3000, token);
+                }
             }
-            // ReSharper disable once FunctionNeverReturns
+            catch (OperationCanceledException)
+            {
+                LogMessage("StashRefreshLoop was canceled.");
+            }
+            catch (Exception ex)
+            {
+                LogError($"Unexpected error in StashRefreshLoop: {ex}");
+            }
         }
 
         public override void Render()
@@ -110,27 +124,30 @@ namespace StashMan
             base.Render();
         }
 
-
         public override void DrawSettings()
         {
             // Place plugin settings UI code here if needed
-            // e.g. toggles, numeric inputs for refresh rate, etc.
+            // e.g., toggles, numeric inputs for refresh rate, etc.
             base.DrawSettings();
         }
 
         public override void AreaChange(AreaInstance area)
         {
             if (area.IsTown || area.IsHideout)
+            {
                 TaskRunner.Run(StashRefreshLoop, StashRefreshTaskName);
+            }
             else
+            {
                 TaskRunner.Stop(StashRefreshTaskName);
+            }
 
             base.AreaChange(area);
         }
 
         public override void ReceiveEvent(string eventId, object args)
         {
-            // If you handle certain event IDs from ExileCore or other plugins, do it here
+            // Handle certain event IDs from ExileCore or other plugins
             LogMessage($"Received event: {eventId}", 2);
 
             base.ReceiveEvent(eventId, args);
