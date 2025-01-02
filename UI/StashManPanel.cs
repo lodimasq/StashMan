@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using ImGuiNET;
 using StashMan.Infrastructure;
 using StashMan.Models;
@@ -14,7 +16,7 @@ namespace StashMan.UI
         private static bool _pOpen;
         private static bool IsVisible { get; set; } = true;
 
-        public static void DrawPanel(Stash stashData)
+        public static void DrawPanel(List<StashTab> stashTabs)
         {
             _pOpen = IsVisible;
             if (_pOpen)
@@ -23,7 +25,7 @@ namespace StashMan.UI
 
             // Display stash data
             ImGui.Text("Stash Data:");
-            foreach (var tab in stashData.Tabs)
+            foreach (var tab in stashTabs.ToList())
             {
                 ImGui.Text($"Tab: {tab.Name}, Type: {tab.Type}");
                 foreach (var item in tab.Items)

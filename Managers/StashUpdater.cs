@@ -8,11 +8,6 @@ using StashMan.Models;
 
 namespace StashMan.Managers;
 
-[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public class IgnoreUpdateAttribute : Attribute
-{
-}
-
 public class StashUpdater(StashManager stashManager, ItemManager itemManager)
 {
     public void RefreshStashData()
@@ -20,7 +15,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
         var currentTabDataFromMemory = ReadTabsFromMemory();
         if (currentTabDataFromMemory == null)
         {
-            Console.WriteLine("[StashUpdater] No stash data found in memory.");
+            StashManCore.Main.LogError("[StashUpdater] No stash data found in memory.");
             return;
         }
 
@@ -32,7 +27,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[StashUpdater] Error processing tab '{memoryTab.Name}': {ex.Message}");
+                StashManCore.Main.LogError($"[StashUpdater] Error processing tab '{memoryTab.Name}': {ex.Message}");
             }
         }
 
@@ -77,7 +72,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[StashUpdater] Error removing tab '{tab.Name}': {ex.Message}");
+                StashManCore.Main.LogError($"[StashUpdater] Error removing tab '{tab.Name}': {ex.Message}");
             }
         }
     }
@@ -87,7 +82,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
         var inventories = StashManCore.Main.GameController.Game.IngameState.IngameUi.StashElement?.Inventories;
         if (inventories == null)
         {
-            Console.WriteLine("[StashUpdater] Stash not visible or memory not accessible.");
+            StashManCore.Main.LogError("[StashUpdater] Stash not visible or memory not accessible.");
             return null;
         }
 
@@ -109,7 +104,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[StashUpdater] Error reading tab '{inventory.TabName}': {ex.Message}");
+                    StashManCore.Main.LogError($"[StashUpdater] Error reading tab '{inventory.TabName}': {ex.Message}");
                     return null;
                 }
             })
@@ -124,14 +119,11 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
             var baseComponent = item.Entity.GetComponent<Base>();
             var stackComponent = item.Entity.GetComponent<Stack>();
 
-            if (baseComponent == null || stackComponent == null)
-                return null;
-
             var newItem = new StashItem
             {
                 BaseName = baseComponent.Info.BaseItemTypeDat.BaseName,
                 ClassName = baseComponent.Info.BaseItemTypeDat.ClassName,
-                Quantity = stackComponent.Size,
+                Quantity = stackComponent?.Size ?? 1,
                 Position = new ItemPosition
                 {
                     GridHeight = item.ItemHeight,
@@ -147,7 +139,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[StashUpdater] Error creating item: {ex.Message}");
+            StashManCore.Main.LogError($"[StashUpdater] Error creating item: {ex.Message}");
             return null;
         }
     }
@@ -166,7 +158,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
             }
             catch (Exception ex)
             {
-                Console.WriteLine(
+                StashManCore.Main.LogError(
                     $"[StashUpdater] Error updating property '{prop.Name}' for tab '{existingTab.Name}': {ex.Message}");
             }
         }
@@ -191,7 +183,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
             }
             catch (Exception ex)
             {
-                Console.WriteLine(
+                StashManCore.Main.LogError(
                     $"[StashUpdater] Error processing item '{memItem.BaseName}' in tab '{existingTab.Name}': {ex.Message}");
             }
         }
@@ -209,7 +201,7 @@ public class StashUpdater(StashManager stashManager, ItemManager itemManager)
             }
             catch (Exception ex)
             {
-                Console.WriteLine(
+                StashManCore.Main.LogError(
                     $"[StashUpdater] Error removing item '{rem.BaseName}' from tab '{existingTab.Name}': {ex.Message}");
             }
         }

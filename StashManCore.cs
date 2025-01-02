@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Linq;
+using System.Numerics;
 using ExileCore2;
 using StashMan.Events.EventHandlers;
 using StashMan.Managers;
@@ -119,7 +123,19 @@ namespace StashMan
         {
             if (!Settings.Enable) return;
 
-            StashManPanel.DrawPanel(Settings.StashData);
+            StashManPanel.DrawPanel(_stashManager.Tabs);
+
+            var selectedStashTab =
+                Main.GameController.Game.IngameState.IngameUi.StashElement?.Inventories.FirstOrDefault(t =>
+                    t.Inventory.IsVisible);
+            if (selectedStashTab != null)
+            {
+                var tab = _stashManager.GetTabByName(selectedStashTab.TabName);
+                tab?.Items.ForEach(i =>
+                {
+                    Graphics.DrawFrame(i.Position.TopLeft, i.Position.BottomRight, Color.Red, 1);
+                });
+            }
 
             base.Render();
         }
