@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using StashMan.Events;
 using StashMan.Models;
+using static StashMan.StashManCore;
 
 namespace StashMan.Managers
 {
@@ -75,7 +76,7 @@ namespace StashMan.Managers
             }
             catch (Exception e)
             {
-                StashManCore.Main.LogError($"Error updating tab property {prop.Name}: {e.Message}");
+                Main.LogError($"Error updating tab property {prop.Name}: {e.Message}");
             }
         }
 
