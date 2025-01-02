@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
-using System.Numerics;
 using ExileCore2;
 using StashMan.Events.EventHandlers;
 using StashMan.Managers;
@@ -46,7 +44,7 @@ namespace StashMan
             LoggingEventHandler.Register();
             PriceEventHandler.Register();
 
-            Settings.Enable.OnValueChanged += (sender, enabled) =>
+            Settings.Enable.OnValueChanged += (_, enabled) =>
             {
                 if (enabled && IsTownOrHideout())
                 {
